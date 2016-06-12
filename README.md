@@ -27,7 +27,7 @@
   * Clone this git repository
 
     ```
-    $ git clone https://github.com/acamargo/dindas_exercise.git
+    $ git clone https://github.com/acamargo/dindas-exercise.git
     ```
 
   * Install the gems required by the application
