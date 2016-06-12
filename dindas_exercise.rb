@@ -5,7 +5,7 @@
 # Written by André Camargo
 # June 2016
 
-CHART_OF_ACCOUNTS_CSV = <<CSV
+CHART_OF_ACCOUNTS_CSV_SAMPLE = <<CSV
 10,0
 3,345
 2,234
@@ -13,7 +13,7 @@ CHART_OF_ACCOUNTS_CSV = <<CSV
 4,0
 CSV
 
-CASH_BOOK_CSV = <<CSV
+CASH_BOOK_CSV_SAMPLE = <<CSV
 1,100
 2,66
 1,-500
@@ -181,7 +181,7 @@ class Cli
       puts "File #{contas_csv_path} doesn't exist."
       puts "So, I'm seeding some balance data for you ;-)"
       File.open(contas_csv_path, 'w+') do |file|
-        file.write(CHART_OF_ACCOUNTS_CSV)
+        file.write(CHART_OF_ACCOUNTS_CSV_SAMPLE)
       end
       puts "File #{contas_csv_path} created"
     end
@@ -196,7 +196,7 @@ class Cli
       puts "File #{transacoes_csv_path} doesn't exist."
       puts "So, I'm seeding some book entries records for you ;-)"
       File.open(transacoes_csv_path, 'w+') do |file|
-        file.write(CASH_BOOK_CSV)
+        file.write(CASH_BOOK_CSV_SAMPLE)
       end
       puts "File #{transacoes_csv_path} created"
     end
@@ -261,9 +261,9 @@ class CashBookTest < MiniTest::Test
   end
 
   def test_fixture_data_csv
-    chart_of_accounts = ChartOfAccounts.import_balance_from_csv(CHART_OF_ACCOUNTS_CSV)
+    chart_of_accounts = ChartOfAccounts.import_balance_from_csv(CHART_OF_ACCOUNTS_CSV_SAMPLE)
     chart_of_accounts.add_default_fee!
-    cash_book = CashBook.import_book_entries_from_csv(chart_of_accounts, CASH_BOOK_CSV)
+    cash_book = CashBook.import_book_entries_from_csv(chart_of_accounts, CASH_BOOK_CSV_SAMPLE)
     assert_equal "1,0\n2,300\n3,400\n4,-501\n10,0", chart_of_accounts.to_csv
   end
 end
@@ -315,8 +315,8 @@ class CliTest < MiniTest::Test
   end
 
   def test_both_files_provided_and_they_exist
-    File.open(@options[:default_contas_csv_path], 'w') {|file| file.write(CHART_OF_ACCOUNTS_CSV) }
-    File.open(@options[:default_transacoes_csv_path], 'w') {|file| file.write(CASH_BOOK_CSV) }
+    File.open(@options[:default_contas_csv_path], 'w') {|file| file.write(CHART_OF_ACCOUNTS_CSV_SAMPLE) }
+    File.open(@options[:default_transacoes_csv_path], 'w') {|file| file.write(CASH_BOOK_CSV_SAMPLE) }
     output = with_captured_stdout do
       argv = [@options[:default_contas_csv_path], @options[:default_contas_csv_path]]
       Cli.run(argv, @options)
