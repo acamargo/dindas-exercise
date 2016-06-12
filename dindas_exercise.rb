@@ -146,42 +146,54 @@ class Tax
 end
 
 class Cli
-  def self.run(args)
+  def self.process(args)
     balance_filename_csv, cash_book_filename_csv = args
-    if balance_filename_csv && File.exists?(balance_filename_csv) &&
-      cash_book_filename_csv && File.exists?(cash_book_filename_csv)
-      @chart_of_accounts = ChartOfAccounts.import_balance_from_csv_file(balance_filename_csv)
-      @chart_of_accounts.add_default_fee!
 
-      @cash_book = CashBook.import_book_entries_from_csv_file(@chart_of_accounts, cash_book_filename_csv)
-      puts "Here it is what you're waiting for:"
+    return false unless balance_filename_csv &&
+      File.exists?(balance_filename_csv) &&
+      cash_book_filename_csv &&
+      File.exists?(cash_book_filename_csv)
+
+    @chart_of_accounts = ChartOfAccounts.import_balance_from_csv_file(balance_filename_csv)
+    @chart_of_accounts.add_default_fee!
+
+    @cash_book = CashBook.import_book_entries_from_csv_file(@chart_of_accounts, cash_book_filename_csv)
+    puts "Here it is what you're waiting for:"
+    puts
+    puts @chart_of_accounts.to_csv
+  end
+
+  def self.help
+    puts "You didn't inform the balance and book entries CSV files."
+    there_is_contas_csv = File.exists?('contas.csv')
+    there_is_transacoes_csv = File.exists?('transacoes.csv')
+    if there_is_contas_csv || there_is_transacoes_csv
       puts
-      puts @chart_of_accounts.to_csv
+      puts "Try it now:"
     else
-      puts "You didn't inform the balance and book entries CSV files."
-      there_is_contas_csv = File.exists?('contas.csv')
-      there_is_transacoes_csv = File.exists?('transacoes.csv')
-      unless there_is_contas_csv || there_is_transacoes_csv
-        puts
-        puts "So, I'm seeding some fixture data for you ;-)"
-        unless there_is_contas_csv
-          File.open('contas.csv', 'w+') do |file|
-            file.write(CHART_OF_ACCOUNTS_CSV)
-          end
-          puts "File contas.csv created"
+      puts
+      puts "So, I'm seeding some fixture data for you ;-)"
+      unless there_is_contas_csv
+        File.open('contas.csv', 'w+') do |file|
+          file.write(CHART_OF_ACCOUNTS_CSV)
         end
-        unless there_is_transacoes_csv
-          File.open('transacoes.csv', 'w+') do |file|
-            file.write(CASH_BOOK_CSV)
-          end
-          puts "File transacoes.csv created"
-        end
+        puts "File contas.csv created"
       end
-      puts
-      puts "Great! Now you can test the app running:"
-      puts
-      puts "$ ruby dindas_exercise.rb contas.csv transacoes.csv"
+      unless there_is_transacoes_csv
+        File.open('transacoes.csv', 'w+') do |file|
+          file.write(CASH_BOOK_CSV)
+        end
+        puts "File transacoes.csv created"
+      end
+    puts
+    puts "Great! Now you can use the app running:"
     end
+    puts
+    puts "$ ruby dindas_exercise.rb contas.csv transacoes.csv"
+  end
+
+  def self.run(args)
+    help unless process(args)
   end
 end
 
@@ -236,6 +248,8 @@ class CashBookTest < MiniTest::Test
     assert_equal "1,0\n2,300\n3,400\n4,-501", chart_of_accounts.to_csv
   end
 end
+
+# Script -------------------------------------------------------------------
 
 if Minitest.run
   puts
