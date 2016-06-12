@@ -6,6 +6,7 @@
 # June 2016
 
 CHART_OF_ACCOUNTS_CSV = <<CSV
+10,0
 3,345
 2,234
 1,123
@@ -53,8 +54,8 @@ class ChartOfAccounts
   def to_csv
     @accounts.
       values.
+      sort {|a,b| a.id <=> b.id }.
       collect {|account| "#{account.id},#{account.balance_in_cents}" }.
-      sort.
       join("\n")
   end
 
@@ -263,7 +264,7 @@ class CashBookTest < MiniTest::Test
     chart_of_accounts = ChartOfAccounts.import_balance_from_csv(CHART_OF_ACCOUNTS_CSV)
     chart_of_accounts.add_default_fee!
     cash_book = CashBook.import_book_entries_from_csv(chart_of_accounts, CASH_BOOK_CSV)
-    assert_equal "1,0\n2,300\n3,400\n4,-501", chart_of_accounts.to_csv
+    assert_equal "1,0\n2,300\n3,400\n4,-501\n10,0", chart_of_accounts.to_csv
   end
 end
 
@@ -320,7 +321,7 @@ class CliTest < MiniTest::Test
       argv = [@options[:default_contas_csv_path], @options[:default_contas_csv_path]]
       Cli.run(argv, @options)
     end
-    assert_equal "Here it is what you're waiting for:\n\n1,123\n2,234\n3,345\n4,0\n\n", output
+    assert_equal "Here it is what you're waiting for:\n\n1,123\n2,234\n3,345\n4,0\n10,0\n\n", output
   end
 end
 
