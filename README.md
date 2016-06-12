@@ -1,6 +1,6 @@
 # Dinda Dev Challenge
 
-  This ruby app is a programming exercise build for Dinda's recruitement process.
+  This ruby app is a programming exercise build for Dinda's recruitment process.
 
 # How to run it
 
@@ -45,9 +45,9 @@
 
   * Tweak the fixture data CSV files to meet your needs
 
-    * contas.csv structure is an account by line where: <account id>,<balance as integer value in cents>
+    * contas.csv structure is an account by line where: `<account id>,<balance as integer value in cents>`
 
-    * transacoes.csv structure is a book entry by line where: <account id>,<book value as integer in cents>
+    * transacoes.csv structure is a book entry by line where: `<account id>,<book value as integer in cents>`
 
   * Run the app with your data
 
