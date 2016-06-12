@@ -146,7 +146,7 @@ class Tax
 end
 
 class Cli
-  def self.process(args)
+  def self.process(args, options)
     balance_filename_csv, cash_book_filename_csv = args
 
     return false unless balance_filename_csv &&
@@ -161,39 +161,57 @@ class Cli
     puts "Here it is what you're waiting for:"
     puts
     puts @chart_of_accounts.to_csv
+    puts
+    true
   end
 
-  def self.help
-    puts "You didn't inform the balance and book entries CSV files."
-    there_is_contas_csv = File.exists?('contas.csv')
-    there_is_transacoes_csv = File.exists?('transacoes.csv')
-    if there_is_contas_csv || there_is_transacoes_csv
-      puts
-      puts "Try it now:"
-    else
-      puts
-      puts "So, I'm seeding some fixture data for you ;-)"
-      unless there_is_contas_csv
-        File.open('contas.csv', 'w+') do |file|
-          file.write(CHART_OF_ACCOUNTS_CSV)
-        end
-        puts "File contas.csv created"
+  def self.help(args, options)
+    options[:default_contas_csv_path] = 'contas.csv' unless options.has_key?(:default_contas_csv_path)
+    options[:default_transacoes_csv_path] = 'transacoes.csv' unless options.has_key?(:default_transacoes_csv_path)
+
+    contas_csv_path, transacoes_csv_path = args
+
+    if contas_csv_path.nil?
+      puts "You didn't inform the balance CSV file."
+      contas_csv_path = options[:default_contas_csv_path]
+      puts "Using default #{contas_csv_path}"
+    end
+    unless File.exists?(contas_csv_path)
+      puts "File #{contas_csv_path} doesn't exist."
+      puts "So, I'm seeding some balance data for you ;-)"
+      File.open(contas_csv_path, 'w+') do |file|
+        file.write(CHART_OF_ACCOUNTS_CSV)
       end
-      unless there_is_transacoes_csv
-        File.open('transacoes.csv', 'w+') do |file|
-          file.write(CASH_BOOK_CSV)
-        end
-        puts "File transacoes.csv created"
+      puts "File #{contas_csv_path} created"
+    end
+
+    puts
+    if transacoes_csv_path.nil?
+      puts "You didn't inform the cash book CSV file."
+      transacoes_csv_path = options[:default_transacoes_csv_path]
+      puts "Using default #{transacoes_csv_path}"
+    end
+    unless File.exists?(transacoes_csv_path)
+      puts "File #{transacoes_csv_path} doesn't exist."
+      puts "So, I'm seeding some book entries records for you ;-)"
+      File.open(transacoes_csv_path, 'w+') do |file|
+        file.write(CASH_BOOK_CSV)
       end
+      puts "File #{transacoes_csv_path} created"
+    end
+
     puts
     puts "Great! Now you can use the app running:"
-    end
     puts
-    puts "$ ruby dindas_exercise.rb contas.csv transacoes.csv"
+    puts "$ ruby dindas_exercise.rb #{contas_csv_path} #{transacoes_csv_path}"
+    puts
   end
 
-  def self.run(args)
-    help unless process(args)
+  def self.run(args, options={})
+    options[:default_contas_csv_path] = 'contas.csv' unless options.has_key?(:default_contas_csv_path)
+    options[:default_transacoes_csv_path] = 'transacoes.csv' unless options.has_key?(:default_transacoes_csv_path)
+    result = process(args, options)
+    help(args, options) unless result
   end
 end
 
@@ -249,6 +267,63 @@ class CashBookTest < MiniTest::Test
   end
 end
 
+class CliTest < MiniTest::Test
+  def with_captured_stdout
+    begin
+      old_stdout = $stdout
+      $stdout = StringIO.new('','w')
+      yield
+      $stdout.string
+    ensure
+      $stdout = old_stdout
+    end
+  end
+
+  def setup
+    @options = {
+      default_contas_csv_path: 'teste_contas.csv',
+      default_transacoes_csv_path: 'teste_transacoes.csv'
+    }
+  end
+
+  def teardown
+    @options.values.each do |filename|
+      File.delete filename if File.exists?(filename)
+    end
+  end
+
+  def test_no_csv_files
+    output = with_captured_stdout do
+      argv = []
+      Cli.run(argv, @options)
+    end
+    assert_equal "You didn't inform the balance CSV file.\nUsing default teste_contas.csv\nFile teste_contas.csv doesn't exist.\nSo, I'm seeding some balance data for you ;-)\nFile teste_contas.csv created\n\nYou didn't inform the cash book CSV file.\nUsing default teste_transacoes.csv\nFile teste_transacoes.csv doesn't exist.\nSo, I'm seeding some book entries records for you ;-)\nFile teste_transacoes.csv created\n\nGreat! Now you can use the app running:\n\n$ ruby dindas_exercise.rb teste_contas.csv teste_transacoes.csv\n\n", output
+  end
+
+  def test_just_one_csv_file
+    output = with_captured_stdout { Cli.run([@options[:default_contas_csv_path]], @options) }
+    assert_equal "File teste_contas.csv doesn't exist.\nSo, I'm seeding some balance data for you ;-)\nFile teste_contas.csv created\n\nYou didn't inform the cash book CSV file.\nUsing default teste_transacoes.csv\nFile teste_transacoes.csv doesn't exist.\nSo, I'm seeding some book entries records for you ;-)\nFile teste_transacoes.csv created\n\nGreat! Now you can use the app running:\n\n$ ruby dindas_exercise.rb teste_contas.csv teste_transacoes.csv\n\n", output
+  end
+
+  def test_both_files_provided_but_they_dont_exist
+    output = with_captured_stdout do
+      argv = ['teste_contas.csv', 'teste_transacoes.csv']
+      Cli.run(argv, @options)
+    end
+    assert_equal "File teste_contas.csv doesn't exist.\nSo, I'm seeding some balance data for you ;-)\nFile teste_contas.csv created\n\nFile teste_transacoes.csv doesn't exist.\nSo, I'm seeding some book entries records for you ;-)\nFile teste_transacoes.csv created\n\nGreat! Now you can use the app running:\n\n$ ruby dindas_exercise.rb teste_contas.csv teste_transacoes.csv\n\n", output
+  end
+
+  def test_both_files_provided_and_they_exist
+    File.open(@options[:default_contas_csv_path], 'w') {|file| file.write(CHART_OF_ACCOUNTS_CSV) }
+    File.open(@options[:default_transacoes_csv_path], 'w') {|file| file.write(CASH_BOOK_CSV) }
+    output = with_captured_stdout do
+      argv = [@options[:default_contas_csv_path], @options[:default_contas_csv_path]]
+      Cli.run(argv, @options)
+    end
+    assert_equal "Here it is what you're waiting for:\n\n1,123\n2,234\n3,345\n4,0\n\n", output
+  end
+end
+
 # Script -------------------------------------------------------------------
 
 if Minitest.run
@@ -262,4 +337,3 @@ else
   puts "Tests failed! Aborting execution!"
   puts
 end
-puts
